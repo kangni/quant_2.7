@@ -1,1 +1,3 @@
 *** 学习一个姿势
+
+Jupyter Notebook 搭配 Visual Studio Code & Emacs Keymap，还是很高的。
