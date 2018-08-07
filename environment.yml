@@ -1,0 +1,10 @@
+name: quant_2.7
+dependencies:
+- python
+- jupyter
+- matplotlib
+- pandas
+- numpy
+- scipy
+- pip:
+  - requests
