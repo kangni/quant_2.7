@@ -1,5 +1,7 @@
 #%%
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.stats as scs
 linspce_exp = np.linspace(0, 7, 10)
 linspce_exp
 
@@ -71,3 +73,43 @@ print '===================='
 print '某一交易日4只股票的表现'
 print '最大涨幅 {}'.format(np.max(stock_day_change_four, axis=0))
 print '最大涨幅股票 {}'.format(np.argmax(stock_day_change_four, axis=0))
+
+#%%
+a_investor = np.random.normal(loc=100, scale=50, size=(10000, 1))
+b_investor = np.random.normal(loc=100, scale=20, size=(10000, 1))
+
+a_mean = a_investor.mean()
+a_std = a_investor.std()
+a_var = a_investor.var()
+
+b_mean = b_investor.mean()
+b_std = b_investor.std()
+b_var = b_investor.var()
+
+print 'a 交易者期望 {0:.2f} 元，标准差 {1:.2f}，方差 {2:.2f}'.format(a_mean, a_std, a_var)
+print 'b 交易者期望 {0:.2f} 元，标准差 {1:.2f}，方差 {2:.2f}'.format(b_mean, b_std, b_var)
+
+#%%
+plt.plot(a_investor)
+plt.axhline(a_mean + a_std, color='r')
+plt.axhline(a_mean, color='y')
+plt.axhline(a_mean -  a_std, color='g')
+print 'a investor'
+
+#%%
+plt.plot(b_investor)
+plt.axhline(b_mean + b_std, color='r')
+plt.axhline(b_mean, color='y')
+plt.axhline(b_mean - b_std, color='g')
+print 'b investor'
+
+#%%
+first_stock = stock_day_change[0]
+stock_mean = first_stock.mean()
+stock_std = first_stock.std()
+print '股票 0 mean 均值期望:{:.3f}'.format(stock_mean)
+print '股票 0 std 振幅标准差:{:.3f}'.format(stock_std)
+plt.hist(first_stock, bins=50, normed=True)
+fit_linspece = np.linspace(first_stock.min(), first_stock.max())
+pdf = scs.norm(stock_mean, stock_std).pdf(fit_linspece)
+plt.plot(fit_linspece, pdf, lw=2, c='r')
