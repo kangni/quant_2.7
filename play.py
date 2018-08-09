@@ -104,6 +104,8 @@ plt.axhline(b_mean - b_std, color='g')
 print 'b investor'
 
 #%%
+# pdf()：在统计学中称为概率密度函数，是指在某个确定的取值点附近的可能性的函数，
+# 将概率值分配给各个事件，得到事件的概率分布，让事件数值化。
 first_stock = stock_day_change[0]
 stock_mean = first_stock.mean()
 stock_std = first_stock.std()
@@ -113,3 +115,32 @@ plt.hist(first_stock, bins=50, normed=True)
 fit_linspece = np.linspace(first_stock.min(), first_stock.max())
 pdf = scs.norm(stock_mean, stock_std).pdf(fit_linspece)
 plt.plot(fit_linspece, pdf, lw=2, c='r')
+
+#%%
+keep_days = 50
+stock_day_change_test = stock_day_change[:stock_cnt, :view_days-keep_days]
+stock_lower_array = np.argsort(np.sum(stock_day_change_test, axis=1))[:3]
+print '前 454 天中跌幅最大的三只股票跌幅：{}'.format(np.sort(np.sum(stock_day_change_test, axis=1))[:3])
+print '前 454 天中跌幅最大的三只股票序号: {}'.format(stock_lower_array)
+
+#%%
+def show_buy_lower(stock_ind):
+    '''
+    :param stock_ind: 股票序号，即在 stock_day_change 中的位置
+    :return:
+    '''
+    # stock_cnt = 200
+    # view_days = 504
+    # stock_day_change = np.random.standard_normal((stock_cnt, view_days))
+    stock_day_change_test = stock_day_change[:stock_cnt, :view_days-keep_days]
+    _, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 5))
+    axs[0].plot(np.arange(0, view_days - keep_days), stock_day_change_test[stock_ind].cumsum())
+    cs_buy = stock_day_change[stock_ind][view_days - keep_days:view_days].cumsum()
+    axs[1].plot(np.arange(view_days - keep_days, view_days), cs_buy)
+    return cs_buy[-1]
+
+#%%
+profit = 0
+for stock_ind in stock_lower_array:
+    profit += show_buy_lower(stock_ind)
+print '买入第 {} 只股票，从第 454 个交易日开始持有盈亏：{:.2f}%'.format(stock_lower_array, profit)
