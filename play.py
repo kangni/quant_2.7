@@ -10,7 +10,6 @@ stock_cnt = 200
 view_days = 504
 stock_day_change = np.random.standard_normal((stock_cnt, view_days))
 stock_example_a = stock_day_change[:2, :5]
-print 'original data'
 print stock_example_a
 print '===================='
 print 'int data'
@@ -144,3 +143,45 @@ profit = 0
 for stock_ind in stock_lower_array:
     profit += show_buy_lower(stock_ind)
 print '买入第 {} 只股票，从第 454 个交易日开始持有盈亏：{:.2f}%'.format(stock_lower_array, profit)
+
+#%%
+gamblers = 100
+def casino(win_rate, win_once=1, loss_once=1, commission=0.01):
+    """
+    win_rate: 输赢的概率
+    win_once: 每次赢的钱数
+    loss_once: 每次输的钱数
+    commission: 手续费 1%
+    """
+    my_money = 1000000
+    play_cnt = 100000
+    commission = commission
+    for _ in np.arange(0, play_cnt):
+        w = np.random.binomial(1, win_rate)
+        if w:
+            my_money += win_once
+        else:
+            my_money -= loss_once
+        my_money -= commission
+        if my_money <= 0:
+            break
+    return my_money
+
+#%%
+heaven_moneys = [casino(0.5, commission=0) for _ in np.arange(0, gamblers)]
+plt.hist(heaven_moneys, bins=30)
+
+#%%
+cheat_moneys = [casino(0.4, commission=0) for _ in np.arange(0, gamblers)]
+plt.hist(cheat_moneys, bins=30)
+
+#%%
+commission_moneys = [casino(0.5, commission=0.01) for _ in np.arange(0, gamblers)]
+plt.hist(commission_moneys, bins=30)
+
+#%%
+moneys = [casino(0.5, commission=0.01, win_once=1.02, loss_once=0.98) for _ in np.arange(0, gamblers)]
+plt.hist(moneys, bins=30)
+
+#%%
+moneys = [casino(0.45, commission=0.01, win_once=1.02, loss_once=0.98) for _ in np.arange(0, gamblers)]
