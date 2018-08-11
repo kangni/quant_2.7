@@ -1,11 +1,12 @@
 #%%
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import scipy.stats as scs
-linspce_exp = np.linspace(0, 7, 10)
-linspce_exp
 
 #%%
+linspce_exp = np.linspace(0, 7, 10)
+linspce_exp
 stock_cnt = 200
 view_days = 504
 stock_day_change = np.random.standard_normal((stock_cnt, view_days))
@@ -185,3 +186,23 @@ plt.hist(moneys, bins=30)
 
 #%%
 moneys = [casino(0.45, commission=0.01, win_once=1.02, loss_once=0.98) for _ in np.arange(0, gamblers)]
+
+#%%
+stock_day_change = np.load('stock_day_change.npy')
+pd.DataFrame(stock_day_change)[:5]
+
+#%%
+stock_symbols = ['stock' + str(x) for x in range(stock_day_change.shape[0])]
+pd.DataFrame(stock_day_change, index=stock_symbols)[:2]
+days = pd.date_range('2017-1-1', periods=stock_day_change.shape[1], freq='1d')
+stock_symbols = ['stock' + str(x) for x in range(stock_day_change.shape[0])]
+df = pd.DataFrame(stock_day_change, index=stock_symbols, columns=days)
+df = df.T
+df.head()
+df_20 = df.resample('21D', how='mean')
+df_20.head()
+
+#%%
+df_stock0 = df['stock0']
+df_stock0.head()
+df_stock0.cumsum().plot()
