@@ -1,4 +1,4 @@
-name: quant_2.7
+name: quant_play
 dependencies:
 - python
 - jupyter
@@ -7,4 +7,8 @@ dependencies:
 - numpy
 - scipy
 - pip:
+  - abupy
+  - bokeh
+  - pillow
   - requests
+  - toolz
