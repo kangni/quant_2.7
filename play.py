@@ -252,3 +252,11 @@ tsla_df.iloc[:, 2:6]
 tsla_df.iloc[:5]
 tsla_df.close[0:3]
 tsla_df[['close', 'high', 'low']][0:3]
+
+#%%
+# "涨跌幅大于 8%" & "交易成交量大于统计周期内的平均值的 2.5 倍"
+tsla_df[np.abs(tsla_df.p_change) > 8]
+tsla_df.volume > 2.5 * tsla_df.volume.mean()
+tsla_df[(np.abs(tsla_df.p_change) > 8) & (tsla_df.volume > 2.5 * tsla_df.volume.mean())]
+tsla_df.sort_index(by='p_change')[:5]
+tsla_df.sort_index(by='p_change', ascending=False)[:5]
