@@ -260,3 +260,40 @@ tsla_df.volume > 2.5 * tsla_df.volume.mean()
 tsla_df[(np.abs(tsla_df.p_change) > 8) & (tsla_df.volume > 2.5 * tsla_df.volume.mean())]
 tsla_df.sort_index(by='p_change')[:5]
 tsla_df.sort_index(by='p_change', ascending=False)[:5]
+
+#%%
+# 缺失数据处理
+# 
+# 一行中的数据存在 na 就删除这行
+tsla_df.dropna()
+# 如果一行的数据全为 na 就删除这行
+tsla_df.dropna(how='all')
+# 使用指定值填充 na，inplace 代表就地操作，即不返回新的序列在原始序列上修改
+tsla_df.fillna(tsla_df.mean(), inplace=False)
+
+#%%
+# pct_change()：对序列从第二项开始向前做减法后再除以前一项。
+# 因为此函数针对价格序列的操作结果即是涨跌幅序列，在股票量化等领域经常使用。
+tsla_df.close[-3:]
+tsla_df.close.pct_change()[-3:]
+change_ratio = tsla_df.close.pct_change()
+change_ratio.tail()
+
+# round() 函数使用
+# 将 change_ratio 转变成 tsla_df.netChangeRatio 字段一样的百分数
+# 同样保留两位小数
+np.round(change_ratio[-5:] * 100, 2)
+
+# 使用 Series 对象的 map() 函数针对列数据 atr21，实现和上面例子 round() 一样的功能
+format = lambda x: '%.2f' % x
+tsla_df.atr21.map(format).tail()
+
+(change_ratio[-5:]*100).map(format)
+
+#%%
+# 数据本地序列化操作
+# 
+# 使用 to_csv 保存 DataFrame 对象，columns 列名称
+tsla_df.to_csv('tsla_df.csv', columns=tsla_df.columns, index=True)
+tsla_df_load = pd.read_csv('tsla_df.csv', parse_dates=True, index_col=0)
+tsla_df_load.tail()
