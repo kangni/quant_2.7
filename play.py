@@ -297,3 +297,42 @@ tsla_df.atr21.map(format).tail()
 tsla_df.to_csv('tsla_df.csv', columns=tsla_df.columns, index=True)
 tsla_df_load = pd.read_csv('tsla_df.csv', parse_dates=True, index_col=0)
 tsla_df_load.tail()
+
+#%%
+# 如果把涨跌数据分类成十份，TOP 10% 振幅的就被认为是异常表现的振幅，\
+# 我们的需求是鉴定 TSLA 的异常振幅阀值是多少。
+tsla_df.p_change.hist(bins=80)
+
+#%%
+# qcut() 函数将涨跌幅数据进行平均分类。
+# value_counts() 函数经常和 qcut() 函数一起使用，便于更直观地显示分离结果
+# 需要注意的是，只有 Series 对象才有 value_counts() 方法。
+cats = pd.qcut(np.abs(tsla_df.p_change), 10)
+cats.value_counts()
+
+#%%
+# 数据的离散化
+# 如果有自己的分类规则，应该使用 pd.cut() 并传入 bins
+# pd.cut() 函数经常会和 pd.get_dummies() 函数配合使用，将数据由
+# 连续数值类型变成离散类型，即数据的离散化。
+# get_dummies() 生成离散化的哑变量矩阵多用于 ML 中监督学习问题的分类，
+# 使用它来作为训练数据使用。
+bins = [-np.inf, -8.0, -6, -4, -2, 0, 2, 4, 6, 8, np.inf]
+cats = pd.cut(tsla_df.p_change, bins)
+cats.value_counts()
+
+change_ration_dummies = pd.get_dummies(cats, prefix='cr_dummies')
+change_ration_dummies.tail()
+
+# 与 tsla_df 表进行合并
+pd.concat([tsla_df, change_ration_dummies], axis=1).tail()
+
+pd.concat([tsla_df[tsla_df.p_change > 10],
+    tsla_df[tsla_df.atr14 > 16]], axis=0)
+tsla_df[tsla_df.p_change > 10].append(tsla_df[tsla_df.atr14 > 16])
+
+stock_a = pd.DataFrame({'stock_a': ['a', 'b', 'c', 'd', 'a'],
+    'data': range(5)})
+stock_b = pd.DataFrame({'stock_b': ['a', 'b', 'c'],
+    'data': range(3)})
+pd.merge(stock_a, stock_b, left_on='stock_a', right_on='stock_b')
