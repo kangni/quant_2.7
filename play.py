@@ -336,3 +336,66 @@ stock_a = pd.DataFrame({'stock_a': ['a', 'b', 'c', 'd', 'a'],
 stock_b = pd.DataFrame({'stock_b': ['a', 'b', 'c'],
     'data': range(3)})
 pd.merge(stock_a, stock_b, left_on='stock_a', right_on='stock_b')
+
+#%%
+tsla_df['positive'] = np.where(tsla_df.p_change > 0, 1, 0)
+tsla_df.tail()
+# 使用 pd.crosstab() 构建交叉表
+xt = pd.crosstab(tsla_df.date_week, tsla_df.positive)
+xt
+
+# 下面是经常和 pd.crosstab() 配套出现的代码，可以说是一个套路
+# 目的是求出所占比例
+xt_pct = xt.div(xt.sum(1).astype(float), axis=0)
+xt_pct
+
+xt_pct.plot(
+    figsize=(8, 5),
+    kind='bar',
+    stacked=True,
+    title='date_week -> positive'
+)
+plt.xlabel('date_week')
+plt.ylabel('positive')
+
+#%%
+# 创建透视表
+tsla_df.pivot_table(['positive'], index=['date_week'])
+tsla_df.groupby(['date_week', 'positive'])['positive'].count()
+
+#%%
+# 下面根據「跳空缺口」的理論來尋找 TSLA 的跳空缺口，
+# 但並不是使用傳統的跳空定義方式，因為這種方式很容易夾雜普通缺口。
+# 定義缺口的方式如下：
+# 1. 今天如果是上漲趨勢，那麼跳空的確定需要今天的最低價格大於昨天收盤價格一個閥值以上，確定向上跳空；
+# 2. 今天如果是下跌趨勢，那麼跳空的確定需要昨天的收盤價格大於今天最高價格一個閥值以上，確定向下跳空。
+
+jump_threshold = tsla_df.close.median() * 0.03
+jump_threshold
+
+#%%
+def judge_jump(today):
+    global jump_pd
+    if today.p_change > 0 and \
+        (today.low - today.pre_close) > jump_threshold:
+        today['jump'] = 1
+        today['jump_power'] = (today.low - today.pre_close) / jump_threshold
+        jump_pd = jump_pd.append(today)
+    elif today.p_change < 0 and \
+        (today.pre_close - today.high) > jump_threshold:
+        today['jump'] = -1
+        today['jump_power'] = (today.pre_close - today.high) / jump_threshold
+        jump_pd = jump_pd.append(today)
+
+jump_pd = pd.DataFrame()
+# for kl_index in np.arange(0, tsla_df.shape[0]):
+    # today = tsla_df.ix[kl_index]
+    # judge_jump(today)
+
+tsla_df.apply(judge_jump, axis=1)
+jump_pd.filter(['jump', 'jump_power', 'close', 'date', 'p_change', 'pre_close'])
+
+
+#%%
+from abupy import ABuMarketDrawing
+ABuMarketDrawing.plot_candle_form_klpd(tsla_df, view_indexs=jump_pd.index)
