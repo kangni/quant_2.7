@@ -32,7 +32,6 @@ print('bool')
 mask = stock_example_a > 0.5
 print(mask)
 
-#%%
 stock_example_b = stock_day_change[-2:, -5:]
 print('original data')
 print(stock_example_a)
@@ -40,13 +39,11 @@ print(stock_example_b)
 print('====================')
 print(np.maximum(stock_example_a, stock_example_b))
 
-#%%
 print(stock_example_a)
 print('====================')
 print(np.diff(stock_example_a))
 print(np.diff(stock_example_a, axis=0))
 
-#%%
 tmp_test = stock_example_b
 print(tmp_test)
 print(np.where(tmp_test > 0.5, 1, 0))
@@ -55,8 +52,6 @@ print(np.where(np.logical_or(tmp_test > 0.5, tmp_test < -0.5), 1, 0))
 
 #%%
 np.save('stock_day_change', stock_day_change)
-
-#%%
 stock_day_change = np.load('stock_day_change.npy')
 stock_day_change.shape
 
@@ -399,3 +394,31 @@ jump_pd.filter(['jump', 'jump_power', 'close', 'date', 'p_change', 'pre_close'])
 #%%
 from abupy import ABuMarketDrawing
 ABuMarketDrawing.plot_candle_form_klpd(tsla_df, view_indexs=jump_pd.index)
+
+#%%
+from abupy import ABuIndustries
+r_symbol = 'usQCOM'
+# 获取和 TSLA 处于同一行业的股票
+p_date, _ = ABuIndustries.get_industries_panel_from_target(r_symbol, show=False)
+type(p_date)
+# 三维数据
+p_date
+# 其中一个切面数据
+p_date['usNOK'].tail()
+
+#%%
+# 高维的 Panel 通过轴向的互换等空间操作，可以高效灵活地变换出各种数据形式。
+p_data_it = p_date.swapaxes('items', 'minor')
+p_data_it
+
+# 通过拿出 Items axis 中的 close 来选取所有股票的 close，形成一个新的横切面数据
+p_data_it_close = p_data_it['close'].dropna(axis=0)
+p_data_it_close.tail()
+
+#%%
+from abupy import ABuScalerUtil
+p_data_it_close = ABuScalerUtil.scaler_std(p_data_it_close)
+p_data_it_close.plot()
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.ylabel('Price')
+plt.xlabel('Time')
