@@ -1,8 +1,14 @@
 #%%
 import matplotlib.pyplot as plt
+import matplotlib.finance as mpf
 import numpy as np
 import pandas as pd
 import scipy.stats as scs
+import abupy
+from abupy import ABuMarketDrawing
+from abupy import ABuSymbolPd
+from abupy import ABuIndustries
+from abupy import ABuScalerUtil
 
 #%%
 linspce_exp = np.linspace(0, 7, 10)
@@ -209,8 +215,6 @@ df_stock0_20 = df_stock0.cumsum().resample('21D').ohlc()
 df_stock0_5.head()
 
 #%%
-import abupy
-from abupy import ABuMarketDrawing 
 ABuMarketDrawing.plot_candle_stick(df_stock0_5.index,
                                    df_stock0_5['open'].values,
                                    df_stock0_5['high'].values,
@@ -226,7 +230,6 @@ print(df_stock0_5['open'].index)
 print(df_stock0_5.columns)
 
 #%%
-from abupy import ABuSymbolPd
 tsla_df = ABuSymbolPd.make_kl_df('usTSLA', n_folds=3)
 tsla_df.tail()
 tsla_df[['close', 'volume']].plot(subplots=True, style=['r', 'g'], grid=True)
@@ -392,11 +395,9 @@ jump_pd.filter(['jump', 'jump_power', 'close', 'date', 'p_change', 'pre_close'])
 
 
 #%%
-from abupy import ABuMarketDrawing
 ABuMarketDrawing.plot_candle_form_klpd(tsla_df, view_indexs=jump_pd.index)
 
 #%%
-from abupy import ABuIndustries
 r_symbol = 'usQCOM'
 # 获取和 TSLA 处于同一行业的股票
 p_date, _ = ABuIndustries.get_industries_panel_from_target(r_symbol, show=False)
@@ -416,9 +417,67 @@ p_data_it_close = p_data_it['close'].dropna(axis=0)
 p_data_it_close.tail()
 
 #%%
-from abupy import ABuScalerUtil
 p_data_it_close = ABuScalerUtil.scaler_std(p_data_it_close)
 p_data_it_close.plot()
 plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 plt.ylabel('Price')
 plt.xlabel('Time')
+
+#%%
+tsla_df = ABuSymbolPd.make_kl_df('usTSLA', n_folds=2)
+tsla_df.tail()
+
+#%%
+def plot_demo(axs=None, just_series=False):
+    """
+    :param axs: axs为子画布
+    :param just_series: 是否只绘制一条收盘曲线使用 Series
+    """
+    drawer = plt if axs is None else axs
+    drawer.plot(tsla_df.close, c='r')
+    if not just_series:
+        drawer.plot(tsla_df.close.index, tsla_df.close.values + 10, c='g')
+        drawer.plot(tsla_df.close.index.tolist(), (tsla_df.close.values + 20).tolist(), c='b')
+    plt.xlabel('time')
+    plt.ylabel('close')
+    plt.title('TSLA CLOSE')
+    plt.grid(True)
+
+plot_demo()
+
+#%%
+_, axs = plt.subplots(nrows=2, ncols=2, figsize=(14, 10))
+drawer = axs[0][0]
+plot_demo(drawer)
+drawer.legend(['Series', 'Numpy', 'List'], loc=0)
+
+drawer = axs[0][1]
+plot_demo(drawer)
+drawer.legend(['Series', 'Numpy', 'List'], loc=1)
+
+drawer = axs[1][0]
+plot_demo(drawer)
+drawer.legend(['Series', 'Numpy', 'List'], loc=2)
+
+drawer = axs[1][1]
+plot_demo(drawer)
+drawer.legend(['Series', 'Numpy', 'List'], bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+#%%
+__colorup__ = 'green'
+__colordown__ = 'red'
+tsla_part_df = tsla_df[:90]
+fig, ax = plt.subplots(figsize=(14, 7))
+qutotes = []
+for index, (d, o, c, h, l) in enumerate(
+    zip(tsla_part_df.index, tsla_part_df.open, tsla_part_df.close, tsla_part_df.high, tsla_part_df.low)):
+    d = mpf.date2num(d)
+    val = (d, o, c, h, l)
+    qutotes.append(val)
+mpf.candlestick_ochl(ax, qutotes, width=0.6, colorup=__colorup__, colordown=__colordown__)
+ax.autoscale_view()
+ax.xaxis_date()
+
+#%%
+# 使用封装后的交互可视化 Bokeh 库
+ABuMarketDrawing.plot_candle_form_klpd(tsla_df, html_bk=True)
