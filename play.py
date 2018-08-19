@@ -537,3 +537,38 @@ change_df.tail()
 corr = change_df.corr()
 _, ax = plt.subplots(figsize=(8, 5))
 sb.heatmap(corr, ax=ax)
+
+#%%
+# 1. 标注策略交易区间
+# 假定我们运行了一个量化策略，执行回测，其中一个操作是：2017-07-28 买入股票 TSLA，2017-09-05 卖出。我们的需求就是 \
+# 在收盘价格时间序列的基础上标明上面这个持有区间。
+def plot_trade(buy_date, sell_date):
+    start = tsla_df[tsla_df.index == buy_date].key.values[0]
+    end = tsla_df[tsla_df.index == sell_date].key.values[0]
+    plot_demo(just_series=True)
+    plt.fill_between(tsla_df.index, 0, tsla_df['close'], color='blue', alpha=.08)
+    if tsla_df['close'][end] > tsla_df['close'][start]:
+        plt.fill_between(tsla_df.index[start:end], 0, tsla_df['close'][start:end], color='green', alpha=.38)
+        is_win = True
+    else:
+        plt.fill_between(tsla_df.index[start:end], 0, tsla_df['close'][start:end], color='red', alpha=.38)
+        is_win = False
+    plt.ylim(np.min(tsla_df['close']) - 5, np.max(tsla_df['close']) + 5)
+    plt.legend(['close'], loc='best')
+    return is_win
+
+plot_trade('2017-07-28', '2017-09-05')
+
+#%%
+# 2. 标明策略卖出原因
+# 假定我们运行了一个量化策略，执行回测，我们在 2017-07-28 买入股票是因为量化策略发出信号，TSLA 满足了买入条件，所以 \
+# 买入了股票，而选择在 2017-09-05 卖出的原因却可能有很多种可能。现在假定卖出的原因只有止盈和止损两种，我们的需求就是标明原因。
+def plot_trade_with_annotate(buy_date, sell_date):
+    is_win = plot_trade(buy_date, sell_date)
+    plt.annotate('sell for stop win' if is_win else 'sell for stop loss', xy=(sell_date, tsla_df['close'].asof(sell_date)),
+        arrowprops=dict(facecolor='yellow'),
+        horizontalalignment='left', verticalalignment='top')
+
+plot_trade_with_annotate('2017-08-01', '2017-10-02')
+plot_trade_with_annotate('2018-05-21', '2018-07-30')
+plot_trade_with_annotate('2018-08-02', '2018-08-17')
