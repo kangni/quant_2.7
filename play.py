@@ -4,6 +4,7 @@ import matplotlib.finance as mpf
 import numpy as np
 import pandas as pd
 import scipy.stats as scs
+import seaborn as sb
 import abupy
 from abupy import ABuMarketDrawing
 from abupy import ABuSymbolPd
@@ -515,3 +516,24 @@ change_ceil_floor.value_counts().plot(kind='bar', ax=axs[0][0])
 change_ceil_floor.value_counts().plot(kind='barh', ax=axs[0][1])
 change_ceil_floor.value_counts().plot(kind='kde', ax=axs[1][0])
 change_ceil_floor.value_counts().plot(kind='pie', ax=axs[1][1])
+
+#%%
+# use Seaborn lib
+sb.distplot(tsla_df['p_change'], bins=80)
+sb.boxplot(x='date_week', y='p_change', data=tsla_df)
+sb.jointplot(tsla_df['high'], tsla_df['low'])
+
+#%%
+change_df = pd.DataFrame({'tsla': tsla_df.p_change})
+change_df = change_df.join(pd.DataFrame({'goog': ABuSymbolPd.make_kl_df('usGOOG', n_folds=2).p_change}), how='outer')
+change_df = change_df.join(pd.DataFrame({'aapl': ABuSymbolPd.make_kl_df('usAAPL', n_folds=2).p_change}), how='outer')
+change_df = change_df.join(pd.DataFrame({'fb': ABuSymbolPd.make_kl_df('usFB', n_folds=2).p_change}), how='outer')
+change_df = change_df.join(pd.DataFrame({'bidu': ABuSymbolPd.make_kl_df('usBIDU', n_folds=2).p_change}), how='outer')
+change_df = change_df.dropna()
+change_df.tail()
+
+# 使用 corr 计算数据的相关性
+# 数据可视化的目的是通过可视化更直观深入地理解数据，发现数据之间的关系，进一步指导策略，发现问题。
+corr = change_df.corr()
+_, ax = plt.subplots(figsize=(8, 5))
+sb.heatmap(corr, ax=ax)
