@@ -79,11 +79,9 @@ print('最大涨幅股票 {}'.format(np.argmax(stock_day_change_four, axis=0)))
 #%%
 a_investor = np.random.normal(loc=100, scale=50, size=(10000, 1))
 b_investor = np.random.normal(loc=100, scale=20, size=(10000, 1))
-
 a_mean = a_investor.mean()
 a_std = a_investor.std()
 a_var = a_investor.var()
-
 b_mean = b_investor.mean()
 b_std = b_investor.std()
 b_var = b_investor.var()
@@ -98,7 +96,6 @@ plt.axhline(a_mean, color='y')
 plt.axhline(a_mean -  a_std, color='g')
 print('a investor')
 
-#%%
 plt.plot(b_investor)
 plt.axhline(b_mean + b_std, color='r')
 plt.axhline(b_mean, color='y')
@@ -174,19 +171,15 @@ def casino(win_rate, win_once=1, loss_once=1, commission=0.01):
 heaven_moneys = [casino(0.5, commission=0) for _ in np.arange(0, gamblers)]
 plt.hist(heaven_moneys, bins=30)
 
-#%%
 cheat_moneys = [casino(0.4, commission=0) for _ in np.arange(0, gamblers)]
 plt.hist(cheat_moneys, bins=30)
 
-#%%
 commission_moneys = [casino(0.5, commission=0.01) for _ in np.arange(0, gamblers)]
 plt.hist(commission_moneys, bins=30)
 
-#%%
 moneys = [casino(0.5, commission=0.01, win_once=1.02, loss_once=0.98) for _ in np.arange(0, gamblers)]
 plt.hist(moneys, bins=30)
 
-#%%
 moneys = [casino(0.45, commission=0.01, win_once=1.02, loss_once=0.98) for _ in np.arange(0, gamblers)]
 plt.hist(moneys, bins=30)
 
@@ -539,7 +532,7 @@ _, ax = plt.subplots(figsize=(8, 5))
 sb.heatmap(corr, ax=ax)
 
 #%%
-# 1. 标注策略交易区间
+# 标注策略交易区间
 # 假定我们运行了一个量化策略，执行回测，其中一个操作是：2017-07-28 买入股票 TSLA，2017-09-05 卖出。我们的需求就是 \
 # 在收盘价格时间序列的基础上标明上面这个持有区间。
 def plot_trade(buy_date, sell_date):
@@ -560,7 +553,7 @@ def plot_trade(buy_date, sell_date):
 plot_trade('2017-07-28', '2017-09-05')
 
 #%%
-# 2. 标明策略卖出原因
+# 标明策略卖出原因
 # 假定我们运行了一个量化策略，执行回测，我们在 2017-07-28 买入股票是因为量化策略发出信号，TSLA 满足了买入条件，所以 \
 # 买入了股票，而选择在 2017-09-05 卖出的原因却可能有很多种可能。现在假定卖出的原因只有止盈和止损两种，我们的需求就是标明原因。
 def plot_trade_with_annotate(buy_date, sell_date):
@@ -572,3 +565,73 @@ def plot_trade_with_annotate(buy_date, sell_date):
 plot_trade_with_annotate('2017-08-01', '2017-10-02')
 plot_trade_with_annotate('2018-05-21', '2018-07-30')
 plot_trade_with_annotate('2018-08-02', '2018-08-17')
+
+#%%
+# 将多只股票的价格在同一段统计周期内可视化，通过可视化发现股票间的走势关系和相关性等特征。
+goog_df = ABuSymbolPd.make_kl_df('usGOOG', n_folds=2)
+print(round(goog_df.close.mean(), 2), round(goog_df.close.median(), 2))
+goog_df.tail()
+
+def plot_two_stock(tsla, goog, axs=None):
+    drawer = plt if axs is None else axs
+    drawer.plot(tsla, c='r')
+    drawer.plot(goog, c='g')
+    drawer.grid(True)
+    drawer.legend(['tsla', 'google'], loc='best')
+
+plot_two_stock(tsla_df.close, goog_df.close)
+plt.title('TSLA and Google CLOSE')
+plt.xlabel('time')
+plt.ylabel('close')
+
+#%%
+def two_mean_list(one, two, type_look='look_max'):
+    one_mean = one.mean()
+    two_mean = two.mean()
+    if type_look == 'look_max':
+        one, two = (one, one_mean / two_mean * two) if one_mean > two_mean else (one * two_mean / one_mean, two)
+    elif type_look == 'look min':
+        one, two = (one * two_mean / one_mean, two ) if one_mean > two_mean else (one, two * one_mean / two_mean)
+    return one, two
+
+def regular_std(group):
+    """
+    z-score 规范化
+    """
+    return (group - group.mean()) / group.std()
+
+def regular_mm(group):
+    """
+    最小-最大规范化
+    """
+    return (group - group.min()) / (group.max() - group.min())
+
+#%%
+_, axs = plt.subplots(nrows=2, ncols=2, figsize=(14, 10))
+drawer = axs[0][0]
+plot_two_stock(regular_std(tsla_df.close), regular_std(goog_df.close), drawer)
+drawer.set_title('(group - group.mean()) / group.std()')
+
+drawer = axs[0][1]
+plot_two_stock(regular_mm(tsla_df.close), regular_mm(goog_df.close), drawer)
+drawer.set_title('(group - group.min()) / (group.max() - group.min())')
+
+drawer = axs[1][0]
+one, two = two_mean_list(tsla_df.close, goog_df.close, type_look='look_max')
+plot_two_stock(one, two, drawer)
+drawer.set_title('two_mean_list type_look=look_max')
+
+drawer = axs[1][1]
+one, two = two_mean_list(tsla_df.close, goog_df.close, type_look='look_min')
+plot_two_stock(one, two, drawer)
+drawer.set_title('two_mean_list type_look=look_min')
+
+#%%
+_, ax1 = plt.subplots()
+ax1.plot(tsla_df.close, c='r', label='tsla')
+ax1.legend(loc=2)
+ax1.grid(False)
+
+ax2 = ax1.twinx()
+ax2.plot(goog_df.close, c='g', label='goog')
+ax2.legend(loc=1)
