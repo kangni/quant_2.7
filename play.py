@@ -1,6 +1,9 @@
 #%%
+from collections import namedtuple
+from itertools import product
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 import scipy.stats as scs
@@ -255,7 +258,7 @@ tsla_df.sort_index(by='p_change', ascending=False)[:5]
 
 #%%
 # 缺失数据处理
-# 
+#
 # 一行中的数据存在 na 就删除这行
 tsla_df.dropna()
 # 如果一行的数据全为 na 就删除这行
@@ -284,7 +287,7 @@ tsla_df.atr21.map(format).tail()
 
 #%%
 # 数据本地序列化操作
-# 
+#
 # 使用 to_csv 保存 DataFrame 对象，columns 列名称
 tsla_df.to_csv('tsla_df.csv', columns=tsla_df.columns, index=True)
 tsla_df_load = pd.read_csv('tsla_df.csv', parse_dates=True, index_col=0)
@@ -635,3 +638,95 @@ ax1.grid(False)
 ax2 = ax1.twinx()
 ax2.plot(goog_df.close, c='g', label='goog')
 ax2.legend(loc=1)
+
+#%%
+cs_max = tsla_df.close.max()
+cs_min = tsla_df.close.min()
+sp382 = (cs_max - cs_min) * 0.382 + cs_min
+sp618 = (cs_max - cs_min) * 0.618 + cs_min
+print('视觉上的 382: ' + str(round(sp382, 2)))
+print('视觉上的 618: ' + str(round(sp618, 2)))
+
+demo_list = [1, 1, 1, 100, 100, 100, 100, 100, 100, 100]
+pd.Series(demo_list).sort_values(inplace=False)
+scs.scoreatpercentile(demo_list, 38.2)
+
+sp382_stats = scs.scoreatpercentile(tsla_df.close, 38.2)
+sp618_stats = scs.scoreatpercentile(tsla_df.close, 61.8)
+print('统计上的 sp382 : ' + str(round(sp382_stats, 2)))
+print('统计上的 sp618 : ' + str(round(sp618_stats, 2)))
+
+#%%
+def plot_golden():
+    above618 = np.maximum(sp618, sp618_stats)
+    below618 = np.minimum(sp618, sp618_stats)
+    above382 = np.maximum(sp382, sp382_stats)
+    below382 = np.minimum(sp382, sp382_stats)
+
+    plt.plot(tsla_df.close)
+    plt.axhline(sp382, c='r')
+    plt.axhline(sp382_stats, c='m')
+    plt.axhline(sp618, c='g')
+    plt.axhline(sp618_stats, c='k')
+    plt.fill_between(tsla_df.index, above618, below618, alpha=0.5, color='r')
+    plt.fill_between(tsla_df.index, above382, below382, alpha=0.5, color='g')
+    return namedtuple('golden', ['above618', 'below618', 'above382', 'below382'])(
+        above618, below618, above382, below382)
+
+golden = plot_golden()
+plt.legend(['close', 'sp382', 'sp382_stats', 'sp618', 'sp618_stats'], loc='best')
+
+#%%
+print('理论上的最高盈利点: {}'.format(golden.above618 - golden.below382))
+
+#%%
+buy_rate = [0.20, 0.25, 0.30]
+sell_rate = [0.70, 0.80, 0.90]
+
+def find_percent_point(percent, y_org, want_max):
+    """
+    :param percent: 比例
+    :param y_org: 价格序列
+    :param want_max: 是否返回大的值
+    """
+    cs_max = y_org.max()
+    cs_min = y_org.min()
+    maxmin_imum = np.maximum if want_max else np.minimum
+    return maxmin_imum(
+        scs.scoreatpercentile(y_org, np.round(percent * 100, 1)),
+        (cs_max - cs_min) * percent + cs_min)
+
+result = []
+result.append((0.382, 0.618, round(golden.above618 - golden.below382, 2)))
+
+for (buy, sell) in product(buy_rate, sell_rate):
+    profit_below = find_percent_point(buy, tsla_df.close, False)
+    profit_above = find_percent_point(sell, tsla_df.close, True)
+    result.append((buy, sell, round(profit_above - profit_below, 2)))
+
+result = np.array(result)
+result
+
+#%%
+# 1. 通过 scatter 点图
+cmap = plt.get_cmap('jet', 20)
+cmap.set_under('gray')
+fig, ax = plt.subplots(figsize=(8, 5))
+cax = ax.scatter(result[:, 0], result[:, 1], c=result[:, 2],
+    cmap=cmap, vmin=np.min(result[:, 2]),
+    vmax=np.max(result[:, 2]))
+fig.colorbar(cax, label='max profit', extend='min')
+plt.grid(True)
+plt.xlabel('buy rate')
+plt.ylabel('sell rate')
+plt.show()
+
+# 2. 通过 mpl_toolkits.mplot3d
+fig = plt.figure(figsize=(9, 6))
+ax = fig.gca(projection='3d')
+ax.view_init(30, 60)
+ax.scatter3D(result[:, 0], result[:, 1], result[:, 2], c='r', s=50, cmap='spring')
+ax.set_xlabel('buy rate')
+ax.set_ylabel('sell rate')
+ax.set_zlabel('max profit')
+plt.show()
