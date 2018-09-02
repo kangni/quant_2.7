@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as scs
 import seaborn as sb
+import talib
 import abupy
 from abupy import ABuMarketDrawing
 from abupy import ABuSymbolPd
@@ -730,3 +731,23 @@ ax.set_xlabel('buy rate')
 ax.set_ylabel('sell rate')
 ax.set_zlabel('max profit')
 plt.show()
+
+#%%
+kl_index = tsla_df.index
+dif, dea, bar = talib.MACD(tsla_df.close.values, fastperiod=12, slowperiod=26, signalperiod=9)
+plt.plot(kl_index, dif, label='macd dif')
+plt.plot(kl_index, dea, label='signal dea')
+bar_red = np.where(bar > 0, bar, 0)
+bar_green = np.where(bar < 0, bar, 0)
+plt.bar(kl_index, bar_red, facecolor='red', label='hist bar')
+plt.bar(kl_index, bar_green, facecolor='green', label='hist bar')
+plt.legend(loc='best')
+
+#%%
+atr14 = talib.ATR(tsla_df.high.values, tsla_df.low.values, tsla_df.close.values, timeperiod=14)
+atr21 = talib.ATR(tsla_df.high.values, tsla_df.low.values, tsla_df.close.values, timeperiod=21)
+pd.DataFrame({
+    'close': tsla_df.close,
+    'atr14': atr14,
+    'atr21': atr21
+}).plot(subplots=True, grid=True)
